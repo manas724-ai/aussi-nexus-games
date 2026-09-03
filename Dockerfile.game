@@ -1,0 +1,22 @@
+# Aussi-Nexus Group — Game Server Docker Image
+# © 2026 Aussi-Nexus Group (ABN 76 947 108 181)
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json .
+RUN npm install --production
+
+# Copy game files
+COPY backend/ ./backend/
+COPY public/ ./public/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT:-3001}/api/health || exit 1
+
+EXPOSE ${PORT:-3001}
+
+CMD ["node", "backend/server.js"]

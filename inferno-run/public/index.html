@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ff6600">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="INFERNO RUN: Last Squad — Survival Squad Strategy by Aussi-Nexus Group">
+<title>INFERNO RUN: Last Squad</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --fire:#ff6600;--ember:#ff3300;--heat:#ffaa00;--bg:#1a0a00;--panel:#251000;
+    --border:#3a1800;--text:#e8c8a8;--dim:#7a5030;--red:#ff2233;--green:#44ff88;
+    --blue:#00aaff;--gold:#ffd700;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;}
+  .screen.active{display:flex;}
+
+  /* MENU */
+  #menu{background:radial-gradient(ellipse at 50% 60%, #2a0d00 0%, #1a0a00 70%);}
+  .logo-brand{font-size:0.7rem;letter-spacing:0.4em;color:var(--dim);text-transform:uppercase;}
+  .logo-title{font-size:clamp(2rem,6vw,4rem);font-weight:900;color:var(--fire);text-shadow:0 0 40px var(--fire),0 0 80px rgba(255,102,0,0.4);line-height:1;}
+  .logo-sub{font-size:clamp(0.8rem,2vw,1.1rem);color:var(--heat);letter-spacing:0.3em;margin-top:0.5rem;}
+  .menu-grid{display:grid;gap:0.75rem;width:min(340px,90vw);margin-top:2rem;}
+  .btn{padding:0.85rem 2rem;background:transparent;border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:0.95rem;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;transition:all 0.2s;text-align:center;}
+  .btn:hover{border-color:var(--fire);color:var(--fire);background:rgba(255,102,0,0.06);}
+  .btn.primary{border-color:var(--fire);color:var(--fire);background:rgba(255,102,0,0.1);}
+  .btn.primary:hover{background:rgba(255,102,0,0.2);box-shadow:0 0 20px rgba(255,102,0,0.4);}
+  .menu-footer{position:absolute;bottom:1rem;font-size:0.65rem;color:var(--dim);text-align:center;line-height:1.8;}
+
+  /* CHARACTER SELECT */
+  #char-select{background:var(--bg);}
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;max-width:700px;width:95vw;margin:1rem 0;}
+  .char-card{border:1px solid var(--border);padding:0.75rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+  .char-card:hover,.char-card.selected{border-color:var(--fire);background:rgba(255,102,0,0.08);}
+  .char-icon{width:50px;height:50px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:0.5rem;border:2px solid var(--fire);}
+  .char-name{font-size:0.85rem;font-weight:900;color:var(--fire);}
+  .char-ability{font-size:0.65rem;color:var(--heat);margin-top:0.25rem;}
+  .char-desc{font-size:0.6rem;color:var(--dim);margin-top:0.3rem;}
+  .char-stats{display:flex;gap:0.5rem;justify-content:center;margin-top:0.4rem;}
+  .stat-badge{font-size:0.6rem;padding:0.1rem 0.4rem;border:1px solid var(--border);}
+
+  /* GAME */
+  #game{background:#000;flex-direction:column;}
+  #gameCanvas{display:block;}
+  .hud{position:absolute;inset:0;pointer-events:none;}
+  .hud-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:0.75rem 1rem;background:linear-gradient(to bottom,rgba(0,0,0,0.85)0%,transparent 100%);}
+  .hud-bottom{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0.75rem 1rem;background:linear-gradient(to top,rgba(0,0,0,0.9)0%,transparent 100%);}
+  .zone-display{text-align:center;}
+  .zone-timer{font-size:1.3rem;font-weight:900;color:var(--fire);}
+  .zone-label{font-size:0.6rem;color:var(--dim);}
+  .zone-radius{font-size:0.75rem;color:var(--heat);}
+  .kills-display{font-size:1.8rem;font-weight:900;color:var(--gold);}
+  .stat-bars{display:flex;flex-direction:column;gap:0.3rem;}
+  .bar-row{display:flex;align-items:center;gap:0.5rem;}
+  .bar-lbl{font-size:0.6rem;color:var(--dim);width:45px;}
+  .bar{width:150px;height:8px;background:rgba(255,255,255,0.1);}
+  .bf{height:100%;transition:width 0.3s;}
+  .bf-hp{background:var(--green);}
+  .bf-armor{background:var(--blue);}
+  .ability-btn{pointer-events:all;border:1px solid var(--fire);background:rgba(255,102,0,0.1);color:var(--fire);font-family:inherit;font-size:0.7rem;padding:0.4rem 0.8rem;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:0.2rem;}
+  .ability-btn:hover{background:rgba(255,102,0,0.25);}
+  .ability-btn.cooling{border-color:var(--dim);color:var(--dim);background:transparent;}
+  .ability-name{font-size:0.55rem;color:var(--heat);}
+  .char-badge{font-size:0.65rem;padding:0.15rem 0.5rem;border:1px solid var(--fire);color:var(--fire);}
+  .weapon-hud{display:flex;flex-direction:column;gap:0.2rem;}
+  .w-name{font-size:0.85rem;color:var(--text);}
+  .w-ammo{font-size:1.3rem;font-weight:900;color:var(--heat);}
+  .squad-hud{position:absolute;top:4rem;left:1rem;display:flex;flex-direction:column;gap:0.25rem;}
+  .squad-member{background:rgba(0,0,0,0.7);border:1px solid var(--border);padding:0.3rem 0.5rem;font-size:0.7rem;display:flex;gap:0.5rem;align-items:center;}
+  .sq-bar{width:60px;height:5px;background:rgba(255,255,255,0.1);}
+  .sq-fill{height:100%;background:var(--green);}
+  .kill-feed{position:absolute;top:4rem;right:1rem;display:flex;flex-direction:column;gap:0.25rem;}
+  .kill-item{background:rgba(0,0,0,0.7);border-left:2px solid var(--fire);padding:0.3rem 0.5rem;font-size:0.7rem;animation:fadeKill 4s forwards;}
+  @keyframes fadeKill{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
+  .minimap{position:absolute;bottom:5rem;right:1rem;border:1px solid var(--border);}
+  .chat-box{position:absolute;bottom:5rem;left:1rem;width:250px;}
+  .chat-msgs{height:90px;overflow-y:auto;background:rgba(0,0,0,0.5);padding:0.3rem;border:1px solid var(--border);display:flex;flex-direction:column;gap:0.1rem;}
+  .chat-msg{font-size:0.7rem;}
+  .chat-name{color:var(--fire);}
+  .chat-row{display:flex;gap:0.25rem;pointer-events:all;}
+  .chat-input{flex:1;background:rgba(0,0,0,0.7);border:1px solid var(--border);color:var(--text);padding:0.3rem 0.5rem;font-family:inherit;font-size:0.75rem;}
+  .zone-warning{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;font-weight:900;color:var(--fire);text-shadow:0 0 30px var(--fire);animation:zoneWarn 3s forwards;pointer-events:none;}
+  @keyframes zoneWarn{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+
+  /* LB */
+  #leaderboard-screen{background:var(--bg);flex-direction:column;}
+  .lb-table{width:min(700px,95vw);border-collapse:collapse;margin-top:1.5rem;}
+  .lb-table th{font-size:0.65rem;letter-spacing:0.2em;color:var(--dim);padding:0.5rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+  .lb-table td{padding:0.6rem 0.75rem;font-size:0.85rem;border-bottom:1px solid rgba(58,24,0,0.5);}
+  .lb-table tr:first-child td{color:var(--gold);}
+
+  @media(max-width:600px){.minimap{display:none;}.char-grid{grid-template-columns:repeat(2,1fr);}.squad-hud{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu" class="screen active">
+  <div style="text-align:center">
+    <div class="logo-brand">Aussi-Nexus Group</div>
+    <div class="logo-title">INFERNO RUN</div>
+    <div class="logo-sub">🔥 Last Squad</div>
+  </div>
+  <div class="menu-grid">
+    <button class="btn primary" onclick="showCharSelect()">▶ Select Character & Play</button>
+    <button class="btn" onclick="showScreen('leaderboard-screen');loadLb()">🏆 Leaderboard</button>
+    <button class="btn" onclick="showAbout()">ℹ About</button>
+  </div>
+  <div class="menu-footer">
+    INFERNO RUN: Last Squad &nbsp;|&nbsp; © 2026 Aussi-Nexus Group (ABN 76 947 108 181)<br>
+    Original IP — Not affiliated with any third-party game publisher<br>
+    nexusonlinegames.com
+  </div>
+</div>
+
+<!-- CHARACTER SELECT -->
+<div id="char-select" class="screen">
+  <div style="text-align:center;margin-bottom:0.75rem">
+    <div class="logo-brand">INFERNO RUN: Last Squad</div>
+    <div style="font-size:1.2rem;font-weight:900;color:var(--fire);margin-top:0.5rem">🔥 Choose Your Operator</div>
+    <input id="riderName" style="background:rgba(0,0,0,0.5);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.8rem;font-family:inherit;margin-top:0.5rem;width:200px;font-size:0.85rem" placeholder="Callsign..." maxlength="20">
+  </div>
+  <div class="char-grid" id="charGrid"></div>
+  <div style="display:flex;gap:1rem;margin-top:0.75rem">
+    <button class="btn primary" onclick="startGame()">🔥 Drop In!</button>
+    <button class="btn" onclick="showScreen('menu')">← Back</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <canvas id="gameCanvas"></canvas>
+  <div class="hud">
+    <div class="hud-top">
+      <div>
+        <div class="char-badge" id="charBadge">BLAZE</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-top:0.25rem" id="riderDisplay">Operator</div>
+        <div style="font-size:0.75rem;color:var(--gold);margin-top:0.25rem">⚔ <span id="killHud">0</span> kills</div>
+      </div>
+      <div class="zone-display">
+        <div class="zone-timer" id="zoneTimer">90s</div>
+        <div class="zone-label">NEXT ZONE</div>
+        <div class="zone-radius">Zone: <span id="zoneRadius">2500m</span></div>
+        <div style="font-size:0.65rem;color:var(--dim)">Alive: <span id="aliveCount" style="color:var(--fire)">1</span></div>
+      </div>
+      <div style="text-align:right">
+        <button class="btn" style="font-size:0.65rem;padding:0.3rem 0.5rem;pointer-events:all" onclick="endGame()">Exit</button>
+      </div>
+    </div>
+
+    <div class="squad-hud" id="squadHud"></div>
+    <div class="kill-feed" id="killFeed"></div>
+    <div class="minimap"><canvas id="mmCanvas" width="150" height="150"></canvas></div>
+
+    <div class="chat-box">
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-row">
+        <input class="chat-input" id="chatIn" placeholder="Squad chat..." maxlength="100">
+        <button class="btn" style="font-size:0.7rem;padding:0.3rem 0.4rem;pointer-events:all" onclick="sendChat()">▶</button>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="stat-bars">
+        <div class="bar-row"><div class="bar-lbl">HP</div><div class="bar"><div class="bf bf-hp" id="hpBar" style="width:100%"></div></div><span style="font-size:0.65rem;margin-left:0.25rem" id="hpVal">100</span></div>
+        <div class="bar-row"><div class="bar-lbl">Armor</div><div class="bar"><div class="bf bf-armor" id="armorBar" style="width:0%"></div></div><span style="font-size:0.65rem;margin-left:0.25rem" id="armorVal">0</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;align-items:center">
+        <button class="ability-btn" id="abilityBtn" onclick="useAbility()">
+          <span>🔥 USE ABILITY</span>
+          <span class="ability-name" id="abilityName">ABILITY</span>
+          <span style="font-size:0.6rem" id="abilityCD"></span>
+        </button>
+        <button class="btn" style="font-size:0.65rem;padding:0.25rem 0.6rem;pointer-events:all" onclick="tryRevive()">💊 Revive [F]</button>
+      </div>
+      <div class="weapon-hud">
+        <div class="w-name" id="wName">IronMark</div>
+        <div style="font-size:0.65rem;color:var(--dim)" id="wType">Pistol</div>
+        <div class="w-ammo"><span id="wAmmo">15</span><span style="font-size:0.65rem;color:var(--dim)">/45</span></div>
+        <button class="btn" style="font-size:0.6rem;padding:0.2rem 0.5rem;pointer-events:all;margin-top:0.25rem" onclick="tryReload()">R Reload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboard-screen" class="screen">
+  <div style="text-align:center;margin-bottom:1rem">
+    <div class="logo-brand">INFERNO RUN: Last Squad</div>
+    <div style="font-size:1.4rem;font-weight:900;color:var(--fire);margin-top:0.5rem">🏆 TOP OPERATORS</div>
+  </div>
+  <table class="lb-table">
+    <thead><tr><th>#</th><th>Operator</th><th>Character</th><th>Wins</th><th>Kills</th><th>Revives</th></tr></thead>
+    <tbody id="lbBody"></tbody>
+  </table>
+  <button class="btn" style="margin-top:2rem" onclick="showScreen('menu')">← Back</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const BACKEND = window.location.origin;
+let ws=null, playerId=null;
+let gameLoop=null, keys={}, mouse={x:0,y:0,down:false};
+let selectedChar=null, gameOver=false;
+
+const CHARS=[
+  {id:'blaze',name:'Blaze',icon:'🔥',ability:'Inferno Wall',desc:'Deploy a fire wall blocking vision',hp:100,speed:3.5,cooldown:35},
+  {id:'phantom',name:'Phantom',icon:'👻',ability:'Ghost Step',desc:'Become invisible for 5 seconds',hp:90,speed:4.2,cooldown:45},
+  {id:'ironclad',name:'Ironclad',icon:'🛡',ability:'Shield Surge',desc:'Instant armor recharge for squad',hp:120,speed:2.8,cooldown:50},
+  {id:'nova',name:'Nova',icon:'⚡',ability:'Vortex Dash',desc:'Dash 15m instantly in any direction',hp:95,speed:4.0,cooldown:30},
+  {id:'vex',name:'Vex',icon:'🌀',ability:'Pulse Grenade',desc:'EMP disables enemy abilities 8s',hp:100,speed:3.2,cooldown:40},
+  {id:'surge',name:'Surge',icon:'💊',ability:'Medic Aura',desc:'Heal all nearby squad +20HP',hp:100,speed:3.0,cooldown:38},
+];
+
+const WEAPONS=[
+  {id:'ironmark',name:'IronMark',type:'Pistol',damage:32,fireRate:350,ammo:15,maxAmmo:45},
+  {id:'razorfire',name:'RazorFire M4',type:'Assault',damage:70,fireRate:650,ammo:30,maxAmmo:90},
+  {id:'venom9',name:'Venom 9',type:'SMG',damage:38,fireRate:900,ammo:45,maxAmmo:135},
+  {id:'thunderbore',name:'Thunderbore',type:'Sniper',damage:120,fireRate:40,ammo:5,maxAmmo:15},
+  {id:'blastpump',name:'BlastPump',type:'Shotgun',damage:95,fireRate:75,ammo:6,maxAmmo:18},
+  {id:'heatseeker',name:'HeatSeeker',type:'Launcher',damage:180,fireRate:20,ammo:3,maxAmmo:9},
+];
+
+const gState={hp:100,armor:0,kills:0,alive:true,zoneRadius:2500,zoneCenterX:0,zoneCenterY:0,
+  character:null,weapon:{...WEAPONS[0]},abilityCD:0,revives:0,squadMates:[]};
+const pPos={x:0,y:0,angle:0};
+const enemies=[],bullets=[],particles=[],lootItems=[];
+const WORLD=4000;
+
+// Canvas
+const canvas=$('gameCanvas');
+const ctx=canvas.getContext('2d');
+const mmCanvas=$('mmCanvas');
+const mmCtx=mmCanvas.getContext('2d');
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+
+let cam={x:0,y:0};
+function updateCam(){cam.x+=(pPos.x-canvas.width/2-cam.x)*0.1;cam.y+=(pPos.y-canvas.height/2-cam.y)*0.1;}
+
+// Build char select UI
+function buildCharSelect(){
+  $('charGrid').innerHTML=CHARS.map(c=>`
+    <div class="char-card${selectedChar?.id===c.id?' selected':''}" onclick="selectChar('${c.id}')" id="cc_${c.id}">
+      <div class="char-icon">${c.icon}</div>
+      <div class="char-name">${c.name}</div>
+      <div class="char-ability">⚡ ${c.ability}</div>
+      <div class="char-desc">${c.desc}</div>
+      <div class="char-stats">
+        <div class="stat-badge">HP ${c.hp}</div>
+        <div class="stat-badge">SPD ${c.speed}</div>
+        <div class="stat-badge">CD ${c.cooldown}s</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectChar(id){
+  selectedChar=CHARS.find(c=>c.id===id);
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  $('cc_'+id).classList.add('selected');
+}
+
+function showCharSelect(){selectedChar=CHARS[0];buildCharSelect();showScreen('char-select');}
+
+// Map generation
+const terrain=[];
+function buildMap(){
+  terrain.length=0;
+  const tile=80;
+  const biomes=['#2a1200','#1e0e00','#2e1800','#241000','#321a00'];
+  for(let x=-WORLD/2;x<WORLD/2;x+=tile){
+    for(let y=-WORLD/2;y<WORLD/2;y+=tile){
+      terrain.push({x,y,w:tile,h:tile,c:biomes[Math.floor(Math.random()*biomes.length)],r:Math.random()>0.85});
+    }
+  }
+  // Loot drops
+  for(let i=0;i<200;i++){
+    lootItems.push({
+      id:'l'+i,x:(Math.random()-0.5)*WORLD*0.85,y:(Math.random()-0.5)*WORLD*0.85,
+      type:Math.random()<0.3?'weapon':(Math.random()<0.4?'health':'armor'),
+      weapon:Math.random()<0.5?WEAPONS[Math.floor(Math.random()*WEAPONS.length)]:null,
+      picked:false,pulse:Math.random()*Math.PI*2
+    });
+  }
+}
+
+function spawnBots(n=30){
+  enemies.length=0;
+  for(let i=0;i<n;i++){
+    const char=CHARS[Math.floor(Math.random()*CHARS.length)];
+    enemies.push({
+      id:'bot'+i,x:(Math.random()-0.5)*WORLD*0.85,y:(Math.random()-0.5)*WORLD*0.85,
+      angle:Math.random()*Math.PI*2,hp:char.hp,alive:true,
+      speed:char.speed*0.6,weapon:WEAPONS[Math.floor(Math.random()*WEAPONS.length)],
+      lastShot:0,shootInterval:2200+Math.random()*2000,
+      target:{x:(Math.random()-0.5)*500,y:(Math.random()-0.5)*500},
+      moveTimer:0,char:char.id,icon:char.icon
+    });
+  }
+  updateAlive();
+}
+
+function updateAlive(){const a=enemies.filter(e=>e.alive).length+1;$('aliveCount').textContent=a;}
+
+function updateBots(dt){
+  const now=Date.now();
+  enemies.forEach(e=>{
+    if(!e.alive)return;
+    e.moveTimer-=dt;
+    if(e.moveTimer<=0){e.target={x:(Math.random()-0.5)*WORLD*0.4,y:(Math.random()-0.5)*WORLD*0.4};e.moveTimer=2500+Math.random()*2500;}
+    const dx=e.target.x-e.x,dy=e.target.y-e.y,d=Math.hypot(dx,dy);
+    if(d>30){const s=e.speed/d;e.x+=dx*s;e.y+=dy*s;e.angle=Math.atan2(dy,dx);}
+    // Zone damage
+    if(Math.hypot(e.x-gState.zoneCenterX,e.y-gState.zoneCenterY)>gState.zoneRadius){e.hp-=0.5;if(e.hp<=0){e.alive=false;updateAlive();}}
+    // Shoot player
+    if(gState.alive&&now-e.lastShot>e.shootInterval){
+      const ddx=pPos.x-e.x,ddy=pPos.y-e.y;
+      if(Math.hypot(ddx,ddy)<550){
+        e.lastShot=now;
+        spawnBullet(e.x,e.y,Math.atan2(ddy,ddx)+(Math.random()-0.5)*0.15,e.weapon.damage,'bot',e.id);
+      }
+    }
+  });
+}
+
+function spawnBullet(x,y,a,dmg,team,owner){bullets.push({x,y,vx:Math.cos(a)*14,vy:Math.sin(a)*14,damage:dmg,team,owner,life:65});}
+
+let lastShot=0;
+function tryShoot(){
+  if(!gState.alive)return;
+  const w=gState.weapon;
+  const now=Date.now();
+  const iv=60000/w.fireRate;
+  if(now-lastShot<iv)return;
+  if(w.ammo<=0){addSysMsg('Out of ammo! Find loot or press R.');return;}
+  lastShot=now;w.ammo--;$('wAmmo').textContent=w.ammo;
+  const spread=w.type==='Shotgun'?0.3:w.type==='Sniper'?0.01:0.07;
+  if(w.type==='Shotgun'){for(let i=0;i<6;i++)spawnBullet(pPos.x,pPos.y,pPos.angle+(Math.random()-0.5)*0.4,w.damage/3,'player','local');}
+  else{spawnBullet(pPos.x,pPos.y,pPos.angle+(Math.random()-0.5)*spread,w.damage,'player','local');}
+  spawnParticle(pPos.x+Math.cos(pPos.angle)*22,pPos.y+Math.sin(pPos.angle)*22,'#ffaa00',4);
+}
+
+function tryReload(){const w=gState.weapon;w.ammo=w.maxAmmo||30;$('wAmmo').textContent=w.ammo;addSysMsg('Reloaded!');}
+
+function updateBullets(){
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;
+    if(b.life<=0){bullets.splice(i,1);continue;}
+    if(b.team==='player'){
+      for(const e of enemies){
+        if(!e.alive)continue;
+        if(Math.hypot(b.x-e.x,b.y-e.y)<15){
+          e.hp-=b.damage;spawnParticle(b.x,b.y,'#ff6600',8,true);
+          if(e.hp<=0){e.alive=false;gState.kills++;$('killHud').textContent=gState.kills;addKillFeed('You',e.id,gState.weapon.name);updateAlive();}
+          bullets.splice(i,1);break;
+        }
+      }
+    } else if(b.team==='bot'&&gState.alive){
+      if(Math.hypot(b.x-pPos.x,b.y-pPos.y)<16){
+        takeDmg(b.damage);spawnParticle(b.x,b.y,'#cc3300',6);bullets.splice(i,1);
+      }
+    }
+  }
+}
+
+function takeDmg(d){
+  let r=d;
+  if(gState.armor>0){const a=Math.min(gState.armor,r*0.6);gState.armor-=a;r-=a;$('armorVal').textContent=Math.round(gState.armor);$('armorBar').style.width=gState.armor+'%';}
+  gState.hp=Math.max(0,gState.hp-r);
+  $('hpVal').textContent=Math.round(gState.hp);$('hpBar').style.width=gState.hp+'%';
+  $('hpBar').style.background=gState.hp>60?'var(--green)':gState.hp>30?'var(--gold)':'var(--red)';
+  if(gState.hp<=0){gState.alive=false;addSysMsg('You were eliminated! Spectating...');}
+}
+
+// Ability
+let abilityCDEnd=0;
+function useAbility(){
+  const now=Date.now();
+  if(now<abilityCDEnd){addSysMsg(`Ability cooling... ${Math.ceil((abilityCDEnd-now)/1000)}s`);return;}
+  const c=gState.character;
+  let effect='';
+  if(c.id==='blaze'){effect='🔥 Inferno Wall deployed! Enemies blinded for 4s.';spawnParticle(pPos.x,pPos.y,'#ff6600',30,true);}
+  else if(c.id==='phantom'){effect='👻 Ghost Step! You are invisible for 5 seconds.';spawnParticle(pPos.x,pPos.y,'#aaaaff',20,true);}
+  else if(c.id==='ironclad'){gState.armor=100;$('armorVal').textContent=100;$('armorBar').style.width='100%';effect='🛡 Shield Surge! Armor fully restored!';}
+  else if(c.id==='nova'){const da=pPos.angle;pPos.x+=Math.cos(da)*150;pPos.y+=Math.sin(da)*150;effect='⚡ Vortex Dash! Dashed 15m forward!';spawnParticle(pPos.x,pPos.y,'#ffff00',20,true);}
+  else if(c.id==='vex'){effect='🌀 Pulse Grenade! Enemy abilities disabled for 8s.';spawnParticle(pPos.x,pPos.y,'#9933ff',25,true);}
+  else if(c.id==='surge'){gState.hp=Math.min(c.hp,gState.hp+20);$('hpVal').textContent=Math.round(gState.hp);$('hpBar').style.width=(gState.hp/c.hp*100)+'%';effect='💊 Medic Aura! Squad healed +20HP!';}
+  abilityCDEnd=now+c.cooldown*1000;
+  addSysMsg(effect);
+  $('abilityBtn').classList.add('cooling');
+  const cdTick=setInterval(()=>{const rem=Math.ceil((abilityCDEnd-Date.now())/1000);$('abilityCD').textContent=rem>0?`${rem}s CD`:'Ready!';if(rem<=0){$('abilityBtn').classList.remove('cooling');clearInterval(cdTick);}},500);
+}
+
+function tryRevive(){addSysMsg('No downed squadmates nearby.');}
+
+// Loot
+function checkLoot(){
+  lootItems.forEach(l=>{
+    if(l.picked)return;
+    if(Math.hypot(l.x-pPos.x,l.y-pPos.y)<28){
+      l.picked=true;
+      if(l.type==='health'){gState.hp=Math.min(gState.character?.hp||100,gState.hp+40);$('hpVal').textContent=Math.round(gState.hp);$('hpBar').style.width=(gState.hp/(gState.character?.hp||100)*100)+'%';addSysMsg('Picked up Health Pack +40HP');}
+      else if(l.type==='armor'){gState.armor=Math.min(100,gState.armor+50);$('armorVal').textContent=Math.round(gState.armor);$('armorBar').style.width=gState.armor+'%';addSysMsg('Picked up Armor +50');}
+      else if(l.type==='weapon'&&l.weapon){gState.weapon={...l.weapon,maxAmmo:l.weapon.ammo*3};$('wName').textContent=l.weapon.name;$('wType').textContent=l.weapon.type;$('wAmmo').textContent=l.weapon.ammo;addSysMsg(`Picked up ${l.weapon.name} [${l.weapon.type}]`);}
+    }
+  });
+}
+
+function spawnParticle(x,y,c,n=5,big=false){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(big?2.5:1)+Math.random()*(big?5:2);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:big?40:20,maxLife:big?40:20,c,sz:big?4:2});}}
+
+// Input
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();mouse.x=e.clientX-r.left+cam.x;mouse.y=e.clientY-r.top+cam.y;pPos.angle=Math.atan2(mouse.y-pPos.y,mouse.x-pPos.x);});
+canvas.addEventListener('mousedown',()=>{mouse.down=true;tryShoot();});
+canvas.addEventListener('mouseup',()=>mouse.down=false);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];mouse.x=t.clientX+cam.x;mouse.y=t.clientY+cam.y;mouse.down=true;tryShoot();},{passive:false});
+canvas.addEventListener('touchend',()=>mouse.down=false);
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];mouse.x=t.clientX+cam.x;mouse.y=t.clientY+cam.y;pPos.angle=Math.atan2(mouse.y-pPos.y,mouse.x-pPos.x);},{passive:false});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyF')tryRevive();if(e.code==='KeyQ')useAbility();if(e.code==='KeyR')tryReload();});
+document.addEventListener('keyup',e=>keys[e.code]=false);
+
+function updateMove(){
+  if(!gState.alive)return;
+  let dx=0,dy=0;
+  if(keys['KeyW']||keys['ArrowUp'])dy-=1;
+  if(keys['KeyS']||keys['ArrowDown'])dy+=1;
+  if(keys['KeyA']||keys['ArrowLeft'])dx-=1;
+  if(keys['KeyD']||keys['ArrowRight'])dx+=1;
+  if(dx&&dy){dx*=0.707;dy*=0.707;}
+  const spd=gState.character?.speed||3;
+  pPos.x+=dx*spd;pPos.y+=dy*spd;
+  pPos.x=Math.max(-WORLD/2,Math.min(WORLD/2,pPos.x));pPos.y=Math.max(-WORLD/2,Math.min(WORLD/2,pPos.y));
+  if(mouse.down)tryShoot();
+  // Zone damage
+  if(Math.hypot(pPos.x-gState.zoneCenterX,pPos.y-gState.zoneCenterY)>gState.zoneRadius)takeDmg(0.3);
+  checkLoot();
+}
+
+// Render
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();ctx.translate(-cam.x,-cam.y);
+  // Background
+  ctx.fillStyle='#1a0a00';ctx.fillRect(cam.x,cam.y,canvas.width,canvas.height);
+  // Terrain
+  const vL=cam.x-100,vR=cam.x+canvas.width+100,vT=cam.y-100,vB=cam.y+canvas.height+100;
+  terrain.forEach(t=>{
+    if(t.x+t.w<vL||t.x>vR||t.y+t.h<vT||t.y>vB)return;
+    ctx.fillStyle=t.c;ctx.fillRect(t.x,t.y,t.w,t.h);
+    if(t.r){ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.arc(t.x+t.w/2,t.y+t.h/2,t.w*0.3,0,Math.PI*2);ctx.fill();}
+  });
+  // Zone ring
+  ctx.strokeStyle='rgba(255,102,0,0.7)';ctx.lineWidth=4;ctx.setLineDash([15,10]);
+  ctx.beginPath();ctx.arc(gState.zoneCenterX,gState.zoneCenterY,gState.zoneRadius,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,60,0,0.04)';
+  ctx.beginPath();ctx.arc(gState.zoneCenterX,gState.zoneCenterY,gState.zoneRadius,0,Math.PI*2);ctx.fill();
+  // Loot
+  lootItems.forEach(l=>{
+    if(l.picked)return;if(l.x<vL-20||l.x>vR+20||l.y<vT-20||l.y>vB+20)return;
+    l.pulse+=0.05;const g=Math.sin(l.pulse)*0.4+0.6;
+    ctx.globalAlpha=g;
+    const col=l.type==='weapon'?'#ffd700':l.type==='health'?'#44ff88':'#00aaff';
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(l.x,l.y,8,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(l.x,l.y,12,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(l.type==='weapon'?l.weapon?.name?.slice(0,6)||'WEAPON':l.type.toUpperCase(),l.x,l.y+22);
+  });
+  // Bullets
+  bullets.forEach(b=>{
+    ctx.fillStyle=b.team==='player'?'#ff6600':'#cc3300';
+    ctx.beginPath();ctx.arc(b.x,b.y,3.5,0,Math.PI*2);ctx.fill();
+  });
+  // Particles
+  particles.forEach(p=>{ctx.globalAlpha=p.life/p.maxLife;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;p.x+=p.vx;p.y+=p.vy;p.vx*=0.9;p.vy*=0.9;p.life--;});
+  particles.splice(0,particles.length,...particles.filter(p=>p.life>0));
+  // Enemies
+  enemies.forEach(e=>{
+    if(!e.alive)return;if(e.x<vL-30||e.x>vR+30||e.y<vT-30||e.y>vB+30)return;
+    ctx.fillStyle='#4a0d00';ctx.beginPath();ctx.arc(e.x,e.y,14,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#cc2200';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,14,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#ff3300';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+Math.cos(e.angle)*20,e.y+Math.sin(e.angle)*20);ctx.stroke();
+    ctx.fillStyle='#300';ctx.fillRect(e.x-12,e.y-21,24,4);
+    ctx.fillStyle=e.hp>50?'#0f8':'#f80';ctx.fillRect(e.x-12,e.y-21,24*e.hp/100,4);
+    ctx.font='8px monospace';ctx.textAlign='center';ctx.fillStyle='#ff9977';ctx.fillText(e.char,e.x,e.y-24);
+  });
+  // Player
+  if(gState.alive){
+    const char=gState.character;
+    ctx.shadowColor='var(--fire)';ctx.shadowBlur=25;
+    ctx.fillStyle='#3a1200';ctx.beginPath();ctx.arc(pPos.x,pPos.y,15,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ff6600';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pPos.x,pPos.y,15,0,Math.PI*2);ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,102,0,0.3)';ctx.lineWidth=1;ctx.setLineDash([5,8]);
+    ctx.beginPath();ctx.moveTo(pPos.x,pPos.y);ctx.lineTo(pPos.x+Math.cos(pPos.angle)*280,pPos.y+Math.sin(pPos.angle)*280);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle='#ff6600';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(pPos.x,pPos.y);ctx.lineTo(pPos.x+Math.cos(pPos.angle)*24,pPos.y+Math.sin(pPos.angle)*24);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('YOU',pPos.x,pPos.y-23);
+  } else {
+    ctx.fillStyle='rgba(255,50,0,0.2)';ctx.beginPath();ctx.arc(pPos.x,pPos.y,30,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ff3300';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.fillText('ELIMINATED',pPos.x,pPos.y+5);
+  }
+  ctx.restore();
+  drawMM();
+}
+
+function drawMM(){
+  mmCtx.fillStyle='rgba(20,5,0,0.92)';mmCtx.fillRect(0,0,150,150);
+  const sc=150/WORLD,off=WORLD/2;
+  mmCtx.strokeStyle='rgba(255,102,0,0.6)';mmCtx.lineWidth=1.5;
+  mmCtx.beginPath();mmCtx.arc((gState.zoneCenterX+off)*sc,(gState.zoneCenterY+off)*sc,gState.zoneRadius*sc,0,Math.PI*2);mmCtx.stroke();
+  enemies.forEach(e=>{if(!e.alive)return;mmCtx.fillStyle='#cc2200';mmCtx.fillRect((e.x+off)*sc-2,(e.y+off)*sc-2,4,4);});
+  lootItems.forEach(l=>{if(l.picked)return;const c=l.type==='weapon'?'#ffd700':l.type==='health'?'#44ff88':'#00aaff';mmCtx.fillStyle=c;mmCtx.fillRect((l.x+off)*sc-1,(l.y+off)*sc-1,2,2);});
+  mmCtx.fillStyle='#ff6600';mmCtx.beginPath();mmCtx.arc((pPos.x+off)*sc,(pPos.y+off)*sc,4,0,Math.PI*2);mmCtx.fill();
+}
+
+function addKillFeed(k,v,w){const f=$('killFeed');const e=document.createElement('div');e.className='kill-item';e.innerHTML=`<span style="color:var(--fire)">${k}</span> 🔥 ${v} [${w}]`;f.prepend(e);if(f.children.length>6)f.lastChild.remove();}
+function addSysMsg(msg){const c=$('chatMsgs');const e=document.createElement('div');e.className='chat-msg';e.innerHTML=`<span style="color:var(--heat)">▶ ${msg}</span>`;c.appendChild(e);c.scrollTop=c.scrollHeight;}
+function sendChat(){const v=$('chatIn').value.trim();if(!v)return;const c=$('chatMsgs');const e=document.createElement('div');e.className='chat-msg';e.innerHTML=`<span class="chat-name">You:</span> ${v}`;c.appendChild(e);c.scrollTop=c.scrollHeight;$('chatIn').value='';}
+$('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+
+// Zone timer
+let zt=90,zInt=null;
+function startZoneTimer(){
+  zInt=setInterval(()=>{
+    zt--;$('zoneTimer').textContent=zt+'s';
+    if(zt<=0){zt=75;gState.zoneRadius=Math.max(200,gState.zoneRadius*0.72);gState.zoneCenterX=(Math.random()-0.5)*400;gState.zoneCenterY=(Math.random()-0.5)*400;$('zoneRadius').textContent=Math.round(gState.zoneRadius)+'m';addSysMsg('🔥 Zone closing in!');}
+  },1000);
+}
+
+// Main loop
+let lt=null;
+function loop(ts){
+  if(!$('game').classList.contains('active'))return;
+  const dt=lt?ts-lt:16;lt=ts;
+  updateMove();updateBots(dt);updateBullets();updateCam();render();
+  if(enemies.filter(e=>e.alive).length===0&&gState.alive){addSysMsg('🏆 LAST SQUAD STANDING! Victory!');gameOver=true;}
+  if(!gameOver)gameLoop=requestAnimationFrame(loop);
+}
+
+function startGame(){
+  if(!selectedChar){selectedChar=CHARS[0];}
+  const name=$('riderName').value.trim()||'Operator';
+  Object.assign(gState,{hp:selectedChar.hp,armor:0,kills:0,alive:true,zoneRadius:2500,zoneCenterX:0,zoneCenterY:0,character:selectedChar,weapon:{...WEAPONS[0],maxAmmo:45}});
+  pPos.x=0;pPos.y=0;gameOver=false;lt=null;abilityCDEnd=0;
+  terrain.length=0;lootItems.length=0;enemies.length=0;bullets.length=0;particles.length=0;
+  buildMap();spawnBots(30);
+  $('charBadge').textContent=selectedChar.name.toUpperCase();
+  $('riderDisplay').textContent=name;$('killHud').textContent=0;
+  $('hpVal').textContent=selectedChar.hp;$('hpBar').style.width='100%';
+  $('armorVal').textContent=0;$('armorBar').style.width='0%';
+  $('wName').textContent=WEAPONS[0].name;$('wType').textContent=WEAPONS[0].type;$('wAmmo').textContent=WEAPONS[0].ammo;
+  $('abilityName').textContent=selectedChar.ability;$('abilityCD').textContent='';
+  $('killFeed').innerHTML='';$('chatMsgs').innerHTML='';$('zoneTimer').textContent='90s';$('zoneRadius').textContent='2500m';
+  showScreen('game');resizeCanvas();
+  zt=90;if(zInt)clearInterval(zInt);startZoneTimer();
+  addSysMsg(`${selectedChar.icon} ${name} [${selectedChar.name}] dropped in! 30 enemy operators await!`);
+  addSysMsg('WASD=Move | Q=Ability | R=Reload | F=Revive | Loot gold items!');
+  if(gameLoop)cancelAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
+}
+
+function endGame(){
+  if(gameLoop){cancelAnimationFrame(gameLoop);gameLoop=null;}
+  if(zInt)clearInterval(zInt);
+  showScreen('menu');
+}
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');}
+
+async function loadLb(){
+  try{
+    const r=await fetch(BACKEND+'/api/leaderboard');const data=await r.json();
+    $('lbBody').innerHTML=data.data?.length?data.data.map((p,i)=>`<tr><td>${i+1}</td><td>${p.playerName}</td><td>${p.character||'-'}</td><td>${p.wins}</td><td>${p.kills}</td><td>${p.squadRevives||0}</td></tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:2rem">No scores yet</td></tr>';
+  }catch{$('lbBody').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:2rem">Offline</td></tr>';}
+}
+
+function showAbout(){alert('INFERNO RUN: Last Squad\n\nSurvival squad strategy with character abilities.\n© 2026 Aussi-Nexus Group (ABN 76 947 108 181)\nnexusonlinegames.com\n\nControls:\nWASD — Move | Mouse — Aim & Shoot\nQ — Use Ability | R — Reload\nF — Revive | Enter — Chat');}
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</body>
+</html>

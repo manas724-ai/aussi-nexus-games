@@ -1,0 +1,49 @@
+version: '3.8'
+# Aussi-Nexus Group — Game Suite Docker Compose
+# © 2026 Aussi-Nexus Group (ABN 76 947 108 181)
+
+services:
+  nexus-strike:
+    build:
+      context: ./nexus-strike
+      dockerfile: ../Dockerfile.game
+    container_name: nexus-strike
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    restart: unless-stopped
+    labels:
+      - "com.aussi-nexus.game=NEXUS STRIKE: Zone Ops"
+      - "com.aussi-nexus.version=1.0.0"
+
+  storm-riders:
+    build:
+      context: ./storm-riders
+      dockerfile: ../Dockerfile.game
+    container_name: storm-riders
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+    restart: unless-stopped
+    labels:
+      - "com.aussi-nexus.game=STORM RIDERS: Build & Conquer"
+      - "com.aussi-nexus.version=1.0.0"
+
+  inferno-run:
+    build:
+      context: ./inferno-run
+      dockerfile: ../Dockerfile.game
+    container_name: inferno-run
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+    restart: unless-stopped
+    labels:
+      - "com.aussi-nexus.game=INFERNO RUN: Last Squad"
+      - "com.aussi-nexus.version=1.0.0"
