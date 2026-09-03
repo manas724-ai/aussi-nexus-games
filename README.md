@@ -56,7 +56,7 @@ aussi-nexus-games/
 
 ```bash
 # Clone the repo
-git clone https://github.com/aussi-nexus/aussi-nexus-games.git
+git clone https://github.com/manas724-ai/aussi-nexus-games.git
 cd aussi-nexus-games
 
 # Run any game
